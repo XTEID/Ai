@@ -81,28 +81,71 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     cur.close()
     conn.close()
 
 init_db()
 
-# Simple Mock Auth for Streamlit (since blueprint is Flask-based)
+# Simple Auth for up to 20 users
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'user_email' not in st.session_state:
+    st.session_state.user_email = None
+
+def get_user_count():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM users")
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return count
+
+def register_user(email):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO users (email) VALUES (%s) ON CONFLICT (email) DO NOTHING", (email,))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def login_sidebar():
     with st.sidebar:
         st.title("👤 Account")
         if not st.session_state.logged_in:
-            st.info("Please login to access all features.")
-            if st.button("Login with Replit"):
-                st.session_state.logged_in = True
-                st.rerun()
+            email = st.text_input("Email", placeholder="your@email.com")
+            if st.button("Login / Register"):
+                if email and "@" in email:
+                    current_count = get_user_count()
+                    # Check if user already exists or if we have room for new user
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
+                    exists = cur.fetchone()
+                    cur.close()
+                    conn.close()
+                    
+                    if exists or current_count < 20:
+                        register_user(email)
+                        st.session_state.logged_in = True
+                        st.session_state.user_email = email
+                        st.rerun()
+                    else:
+                        st.error("Kuota user penuh (Maks 20 user).")
+                else:
+                    st.warning("Masukkan email yang valid.")
         else:
-            st.success("Logged in as User")
+            st.success(f"Logged in: {st.session_state.user_email}")
             if st.button("Logout"):
                 st.session_state.logged_in = False
+                st.session_state.user_email = None
                 st.rerun()
         
         st.divider()
