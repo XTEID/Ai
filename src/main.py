@@ -100,13 +100,18 @@ if 'user_email' not in st.session_state:
     st.session_state.user_email = None
 
 def get_user_count():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM users")
-    count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    return count
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM users")
+        result = cur.fetchone()
+        count = result[0] if result else 0
+        cur.close()
+        conn.close()
+        return count
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        return 0
 
 def register_user(email):
     conn = get_db_connection()
