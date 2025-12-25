@@ -92,6 +92,7 @@ def init_db():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             email TEXT PRIMARY KEY,
+            password TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -133,27 +134,47 @@ def login_sidebar():
     with st.sidebar:
         st.title("👤 Account")
         if not st.session_state.logged_in:
-            email = st.text_input("Email", placeholder="your@email.com")
-            if st.button("Login / Register"):
-                if email and "@" in email:
-                    current_count = get_user_count()
-                    # Check if user already exists or if we have room for new user
-                    conn = get_db_connection()
-                    cur = conn.cursor()
-                    cur.execute("SELECT 1 FROM users WHERE email = %s", (email,))
-                    exists = cur.fetchone()
-                    cur.close()
-                    conn.close()
-                    
-                    if exists or current_count < 20:
-                        register_user(email)
-                        st.session_state.logged_in = True
-                        st.session_state.user_email = email
-                        st.rerun()
+            tab1, tab2 = st.tabs(["Login", "Daftar"])
+            
+            with tab1:
+                l_email = st.text_input("Email", key="l_email")
+                l_pass = st.text_input("Password", type="password", key="l_pass")
+                if st.button("Masuk"):
+                    if l_email and l_pass:
+                        conn = get_db_connection()
+                        cur = conn.cursor()
+                        cur.execute("SELECT password FROM users WHERE email = %s", (l_email,))
+                        res = cur.fetchone()
+                        cur.close()
+                        conn.close()
+                        if res and res[0] == l_pass:
+                            st.session_state.logged_in = True
+                            st.session_state.user_email = l_email
+                            st.rerun()
+                        else:
+                            st.error("Email atau password salah.")
+            
+            with tab2:
+                r_email = st.text_input("Email Baru", key="r_email")
+                r_pass = st.text_input("Password Baru", type="password", key="r_pass")
+                if st.button("Buat Akun"):
+                    if r_email and r_pass and "@" in r_email:
+                        current_count = get_user_count()
+                        if current_count < 20:
+                            try:
+                                conn = get_db_connection()
+                                cur = conn.cursor()
+                                cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (r_email, r_pass))
+                                conn.commit()
+                                cur.close()
+                                conn.close()
+                                st.success("Akun berhasil dibuat! Silakan login.")
+                            except Exception as e:
+                                st.error("Email sudah terdaftar.")
+                        else:
+                            st.error("Kuota user penuh (Maks 20 user).")
                     else:
-                        st.error("Kuota user penuh (Maks 20 user).")
-                else:
-                    st.warning("Masukkan email yang valid.")
+                        st.warning("Data tidak valid.")
         else:
             st.success(f"Logged in: {st.session_state.user_email}")
             if st.button("Logout"):
