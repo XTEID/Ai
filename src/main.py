@@ -28,20 +28,20 @@ st.markdown("""
     }
     
     .main-title {
-        font-size: 3.5rem !important;
+        font-size: 7rem !important;
         font-weight: 800 !important;
         background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
         margin-bottom: 0.5rem;
-        letter-spacing: -2px;
+        letter-spacing: -4px;
     }
     
     .sub-title {
         color: #94a3b8;
         text-align: center;
-        font-size: 1.1rem;
+        font-size: 2.2rem;
         margin-bottom: 2rem;
     }
     
