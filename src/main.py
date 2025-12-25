@@ -119,8 +119,8 @@ def search_internet(query):
             time.sleep(1)
     return []
 
-def get_ai_response(prompt, search_context):
-    """Get AI response with research focus and ethical compliance."""
+def get_ai_response(prompt, search_context, history):
+    """Get AI response with research focus, ethical compliance, and conversation history."""
     try:
         # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
         full_prompt = f"""
@@ -128,12 +128,16 @@ def get_ai_response(prompt, search_context):
         
         Tugas Anda:
         1. Jawablah SETIAP pertanyaan pengguna dengan informasi yang relevan dan mendalam. Jika konteks pencarian tidak mencukupi, gunakan pengetahuan internal Anda untuk memberikan jawaban yang paling membantu.
-        2. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
-        3. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
-        4. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
-        5. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
+        2. Gunakan riwayat percakapan untuk memberikan jawaban yang berkesinambungan.
+        3. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
+        4. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
+        5. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
+        6. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
         
-        Konteks Pencarian Ilmiah:
+        Riwayat Percakapan:
+        {history}
+        
+        Konteks Pencarian Ilmiah Terbaru:
         {search_context}
         
         Pertanyaan Peneliti: {prompt}
@@ -181,7 +185,10 @@ if prompt := st.chat_input("Apa yang ingin Anda pelajari hari ini?"):
                 context = "Tidak ada hasil pencarian yang ditemukan."
                 status.update(label="⚠️ Tidak menemukan informasi spesifik, mencoba menjawab dengan pengetahuan internal...", state="complete")
         
-        response = get_ai_response(prompt, context)
+        # Prepare history context
+        history_context = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in st.session_state.messages[-10:]])
+        
+        response = get_ai_response(prompt, context, history_context)
         st.markdown(response)
         
         # Add references if available
