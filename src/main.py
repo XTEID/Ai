@@ -5,10 +5,85 @@ import os
 import time
 
 # Page config
-st.set_page_config(page_title="V AI Z", page_icon="🌐", layout="wide")
+st.set_page_config(
+    page_title="V AI Z",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-st.title("🌐 V AI Z")
-st.markdown("Saya adalah AI yang dapat membantu Anda mempelajari informasi dari seluruh internet tanpa kendala.")
+# Custom CSS for modern UI
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Space+Grotesk', sans-serif;
+    }
+    
+    .main {
+        background-color: #0e1117;
+    }
+    
+    .stApp {
+        background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
+    }
+    
+    /* Header styling */
+    .main-title {
+        font-size: 4rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .sub-title {
+        color: #94a3b8;
+        text-align: center;
+        font-size: 1.2rem;
+        margin-bottom: 3rem;
+    }
+    
+    /* Chat message styling */
+    .stChatMessage {
+        border-radius: 20px !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px);
+    }
+    
+    div[data-testimonial="user"] {
+        background-color: rgba(99, 102, 241, 0.1) !important;
+    }
+    
+    /* Status box styling */
+    .stStatusWidget {
+        background-color: rgba(30, 41, 59, 0.5) !important;
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* References styling */
+    .stExpander {
+        border: none !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Input area styling */
+    .stChatInputContainer {
+        padding-bottom: 2rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<h1 class="main-title">V AI Z</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">⚡ Smart Research. Global Knowledge. Zero Limits.</p>', unsafe_allow_html=True)
 
 # Initialize OpenAI client using Replit AI Integration
 # Using environment variables provided by the integration
