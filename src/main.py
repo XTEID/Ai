@@ -5,9 +5,9 @@ import os
 import time
 
 # Page config
-st.set_page_config(page_title="AI Internet Explorer", page_icon="🌐", layout="wide")
+st.set_page_config(page_title="V AI Z", page_icon="🌐", layout="wide")
 
-st.title("🌐 AI Internet Explorer")
+st.title("🌐 V AI Z")
 st.markdown("Saya adalah AI yang dapat membantu Anda mempelajari informasi dari seluruh internet tanpa kendala.")
 
 # Initialize OpenAI client using Replit AI Integration
