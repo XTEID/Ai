@@ -51,14 +51,21 @@ st.markdown("""
     /* Chat message styling */
     .stChatMessage {
         border-radius: 20px !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
+        padding: 1.5rem !important;
+        margin-bottom: 1.5rem !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }
     
-    div[data-testimonial="user"] {
-        background-color: rgba(99, 102, 241, 0.1) !important;
+    .stChatMessage[data-testimonial="user"] {
+        background-color: rgba(99, 102, 241, 0.15) !important;
+        border-left: 5px solid #6366f1 !important;
+    }
+
+    .stChatMessage[data-testimonial="assistant"] {
+        background-color: rgba(168, 85, 247, 0.05) !important;
+        border-left: 5px solid #a855f7 !important;
     }
     
     /* Status box styling */
