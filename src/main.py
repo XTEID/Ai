@@ -68,7 +68,15 @@ st.markdown("""
 
 # Database Helper
 def get_db_connection():
-    return psycopg2.connect(os.environ.get("DATABASE_URL"))
+    db_url = os.environ.get("DATABASE_URL")
+    # Handle the specific Replit DB hostname issue by fallback to default or retry
+    try:
+        return psycopg2.connect(db_url, connect_timeout=5)
+    except psycopg2.OperationalError as e:
+        # If 'helium' fails, it might be a temporary DNS issue in the environment
+        st.error(f"Koneksi database terputus sejenak, mencoba kembali... ({str(e)})")
+        time.sleep(2)
+        return psycopg2.connect(db_url, connect_timeout=10)
 
 def init_db():
     conn = get_db_connection()
