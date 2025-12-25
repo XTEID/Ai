@@ -3,13 +3,15 @@ from openai import OpenAI
 from duckduckgo_search import DDGS
 import os
 import time
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 # Page config
 st.set_page_config(
     page_title="V AI Z",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Custom CSS for modern UI
@@ -21,17 +23,12 @@ st.markdown("""
         font-family: 'Space+Grotesk', sans-serif;
     }
     
-    .main {
-        background-color: #0e1117;
-    }
-    
     .stApp {
         background: radial-gradient(circle at top right, #1e1b4b, #0f172a, #020617);
     }
     
-    /* Header styling */
     .main-title {
-        font-size: 4rem !important;
+        font-size: 3.5rem !important;
         font-weight: 800 !important;
         background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
         -webkit-background-clip: text;
@@ -44,11 +41,10 @@ st.markdown("""
     .sub-title {
         color: #94a3b8;
         text-align: center;
-        font-size: 1.2rem;
-        margin-bottom: 3rem;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
     }
     
-    /* Chat message styling */
     .stChatMessage {
         border-radius: 20px !important;
         padding: 1.5rem !important;
@@ -67,134 +63,131 @@ st.markdown("""
         background-color: rgba(168, 85, 247, 0.05) !important;
         border-left: 5px solid #a855f7 !important;
     }
-    
-    /* Status box styling */
-    .stStatusWidget {
-        background-color: rgba(30, 41, 59, 0.5) !important;
-        border: 1px solid rgba(99, 102, 241, 0.3) !important;
-        border-radius: 12px !important;
-    }
-    
-    /* References styling */
-    .stExpander {
-        border: none !important;
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 12px !important;
-    }
-    
-    /* Input area styling */
-    .stChatInputContainer {
-        padding-bottom: 2rem !important;
-    }
 </style>
 """, unsafe_allow_html=True)
+
+# Database Helper
+def get_db_connection():
+    return psycopg2.connect(os.environ.get("DATABASE_URL"))
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT,
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+init_db()
+
+# Simple Mock Auth for Streamlit (since blueprint is Flask-based)
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+def login_sidebar():
+    with st.sidebar:
+        st.title("👤 Account")
+        if not st.session_state.logged_in:
+            st.info("Please login to access all features.")
+            if st.button("Login with Replit"):
+                st.session_state.logged_in = True
+                st.rerun()
+        else:
+            st.success("Logged in as User")
+            if st.button("Logout"):
+                st.session_state.logged_in = False
+                st.rerun()
+        
+        st.divider()
+        st.title("✉️ Support")
+        with st.expander("Report an Issue"):
+            feedback_msg = st.text_area("Detail kendala Anda:")
+            if st.button("Kirim ke Developer"):
+                if feedback_msg:
+                    try:
+                        conn = get_db_connection()
+                        cur = conn.cursor()
+                        cur.execute("INSERT INTO feedback (user_id, message) VALUES (%s, %s)", ("guest", feedback_msg))
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+                        st.success("Pesan terkirim! Terima kasih.")
+                    except Exception as e:
+                        st.error(f"Gagal mengirim: {e}")
+                else:
+                    st.warning("Pesan tidak boleh kosong.")
+
+login_sidebar()
 
 st.markdown('<h1 class="main-title">V AI Z</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">⚡ Intelligent Research. Global Insights. Beyond Boundaries.</p>', unsafe_allow_html=True)
 
-# Initialize OpenAI client using Replit AI Integration
-# Using environment variables provided by the integration
-AI_INTEGRATIONS_OPENAI_API_KEY = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY", "dummy")
-AI_INTEGRATIONS_OPENAI_BASE_URL = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
-
+# AI Client
 client = OpenAI(
-    api_key=AI_INTEGRATIONS_OPENAI_API_KEY,
-    base_url=AI_INTEGRATIONS_OPENAI_BASE_URL
+    api_key=os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY", "dummy"),
+    base_url=os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
 )
 
 def search_internet(query):
-    """Search internet with scientific focus and error handling."""
-    # Menambahkan keyword penelitian untuk hasil yang lebih akademis
     scientific_query = f"{query} research paper scientific article scholarly"
     for attempt in range(3):
         try:
             with DDGS() as ddgs:
                 results = [r for r in ddgs.text(scientific_query, max_results=7)]
-                if results:
-                    return results
-        except Exception as e:
-            if attempt == 2:
-                st.error(f"Gagal mencari di internet: {str(e)}")
-                return []
-            time.sleep(1)
+                if results: return results
+        except: time.sleep(1)
     return []
 
 def get_ai_response(prompt, search_context, history):
-    """Get AI response with research focus, ethical compliance, and conversation history."""
     try:
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        full_prompt = f"""
-        Anda adalah AI Peneliti Senior yang ahli dalam menganalisis karya ilmiah global.
-        
-        Tugas Anda:
-        1. Jawablah SETIAP pertanyaan pengguna dengan informasi yang relevan dan mendalam. Jika konteks pencarian tidak mencukupi, gunakan pengetahuan internal Anda untuk memberikan jawaban yang paling membantu.
-        2. Gunakan riwayat percakapan untuk memberikan jawaban yang berkesinambungan.
-        3. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
-        4. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
-        5. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
-        6. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
-        
-        Riwayat Percakapan:
-        {history}
-        
-        Konteks Pencarian Ilmiah Terbaru:
-        {search_context}
-        
-        Pertanyaan Peneliti: {prompt}
-        
-        Kesimpulan Ilmiah (Bahasa Indonesia):
-        """
-        
+        full_prompt = f"History:\n{history}\nContext:\n{search_context}\nQuestion: {prompt}"
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Anda adalah asisten peneliti AI yang selalu memberikan jawaban atas setiap input pengguna dengan integritas ilmiah dan kepatuhan hukum."},
+                {"role": "system", "content": "Anda adalah asisten peneliti AI yang handal. Jawablah setiap pertanyaan dengan mendalam berdasarkan konteks ilmiah."},
                 {"role": "user", "content": full_prompt}
             ]
         )
         return response.choices[0].message.content
     except Exception as e:
-        error_msg = str(e)
-        if "FREE_CLOUD_BUDGET_EXCEEDED" in error_msg:
-            st.error("Budget cloud gratis telah terlampaui. Mohon tunggu beberapa saat.")
-        else:
-            st.error(f"Terjadi kesalahan pada AI: {error_msg}")
-        return "Maaf, saya mengalami kendala teknis saat memproses jawaban."
+        return f"Terjadi kesalahan: {str(e)}"
 
 # Chat Interface
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 if prompt := st.chat_input("Apa yang ingin Anda pelajari hari ini?"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    if not st.session_state.logged_in:
+        st.warning("Silakan login terlebih dahulu untuk mulai mengobrol.")
+    else:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        with st.status("🔍 Mencari informasi terbaru...", expanded=True) as status:
-            search_results = search_internet(prompt)
+        with st.chat_message("assistant"):
+            with st.status("🔍 Meneliti...", expanded=True) as status:
+                search_results = search_internet(prompt)
+                context = "\n".join([f"- {r['title']}: {r['body']}" for r in search_results]) if search_results else "No context found."
+                status.update(label="✅ Selesai meneliti!", state="complete")
+            
+            history = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.messages[-5:]])
+            response = get_ai_response(prompt, context, history)
+            st.markdown(response)
+            
             if search_results:
-                context = "\n".join([f"- {r['title']}: {r['body']} (Link: {r['href']})" for r in search_results])
-                status.update(label="✅ Informasi ditemukan! Menganalisis...", state="complete")
-            else:
-                context = "Tidak ada hasil pencarian yang ditemukan."
-                status.update(label="⚠️ Tidak menemukan informasi spesifik, mencoba menjawab dengan pengetahuan internal...", state="complete")
-        
-        # Prepare history context
-        history_context = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in st.session_state.messages[-10:]])
-        
-        response = get_ai_response(prompt, context, history_context)
-        st.markdown(response)
-        
-        # Add references if available
-        if search_results:
-            with st.expander("Sumber Informasi"):
-                for r in search_results:
-                    st.write(f"[{r['title']}]({r['href']})")
-                
-    st.session_state.messages.append({"role": "assistant", "content": response})
+                with st.expander("Sumber"):
+                    for r in search_results:
+                        st.write(f"[{r['title']}]({r['href']})")
+                    
+        st.session_state.messages.append({"role": "assistant", "content": response})
