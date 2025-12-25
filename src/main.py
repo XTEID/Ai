@@ -21,11 +21,13 @@ client = OpenAI(
 )
 
 def search_internet(query):
-    """Search internet with error handling and retries."""
+    """Search internet with scientific focus and error handling."""
+    # Menambahkan keyword penelitian untuk hasil yang lebih akademis
+    scientific_query = f"{query} research paper scientific article scholarly"
     for attempt in range(3):
         try:
             with DDGS() as ddgs:
-                results = [r for r in ddgs.text(query, max_results=5)]
+                results = [r for r in ddgs.text(scientific_query, max_results=7)]
                 if results:
                     return results
         except Exception as e:
@@ -36,25 +38,30 @@ def search_internet(query):
     return []
 
 def get_ai_response(prompt, search_context):
-    """Get AI response with error handling."""
+    """Get AI response with research focus and ethical compliance."""
     try:
         # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # However, gpt-4o is currently very stable for this integration.
         full_prompt = f"""
-        Anda adalah AI yang berpengetahuan luas. Gunakan informasi pencarian berikut untuk menjawab pertanyaan pengguna secara akurat.
+        Anda adalah AI Peneliti Senior yang ahli dalam menganalisis karya ilmiah global.
         
-        Konteks Pencarian:
+        Tugas Anda:
+        1. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
+        2. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
+        3. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
+        4. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
+        
+        Konteks Pencarian Ilmiah:
         {search_context}
         
-        Pertanyaan: {prompt}
+        Pertanyaan Peneliti: {prompt}
         
-        Jawaban (dalam Bahasa Indonesia):
+        Kesimpulan Ilmiah (Bahasa Indonesia):
         """
         
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Anda adalah asisten AI yang membantu, cerdas, dan teliti."},
+                {"role": "system", "content": "Anda adalah asisten peneliti AI yang menjunjung tinggi integritas ilmiah, akurasi data, dan kepatuhan hukum."},
                 {"role": "user", "content": full_prompt}
             ]
         )
