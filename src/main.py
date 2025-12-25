@@ -90,7 +90,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<h1 class="main-title">V AI Z</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">⚡ Smart Research. Global Knowledge. Zero Limits.</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">⚡ Intelligent Research. Global Insights. Beyond Boundaries.</p>', unsafe_allow_html=True)
 
 # Initialize OpenAI client using Replit AI Integration
 # Using environment variables provided by the integration
