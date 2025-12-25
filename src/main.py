@@ -69,17 +69,22 @@ st.markdown("""
 # Database Helper
 def get_db_connection():
     db_url = os.environ.get("DATABASE_URL")
-    # Handle the specific Replit DB hostname issue by fallback to default or retry
-    try:
-        return psycopg2.connect(db_url, connect_timeout=5)
-    except psycopg2.OperationalError as e:
-        # If 'helium' fails, it might be a temporary DNS issue in the environment
-        st.error(f"Koneksi database terputus sejenak, mencoba kembali... ({str(e)})")
-        time.sleep(2)
-        return psycopg2.connect(db_url, connect_timeout=10)
+    for attempt in range(3):
+        try:
+            conn = psycopg2.connect(db_url, connect_timeout=10)
+            return conn
+        except psycopg2.OperationalError as e:
+            if attempt < 2:
+                time.sleep(3)
+                continue
+            else:
+                st.error(f"Koneksi database gagal setelah beberapa percobaan: {str(e)}")
+                return None
 
 def init_db():
     conn = get_db_connection()
+    if not conn:
+        return
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS feedback (
@@ -111,6 +116,8 @@ if 'user_email' not in st.session_state:
 def get_user_count():
     try:
         conn = get_db_connection()
+        if not conn:
+            return 0
         cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM users")
         result = cur.fetchone()
@@ -124,6 +131,8 @@ def get_user_count():
 
 def register_user(email):
     conn = get_db_connection()
+    if not conn:
+        return
     cur = conn.cursor()
     cur.execute("INSERT INTO users (email) VALUES (%s) ON CONFLICT (email) DO NOTHING", (email,))
     conn.commit()
@@ -142,17 +151,20 @@ def login_sidebar():
                 if st.button("Masuk"):
                     if l_email and l_pass:
                         conn = get_db_connection()
-                        cur = conn.cursor()
-                        cur.execute("SELECT password FROM users WHERE email = %s", (l_email,))
-                        res = cur.fetchone()
-                        cur.close()
-                        conn.close()
-                        if res and res[0] == l_pass:
-                            st.session_state.logged_in = True
-                            st.session_state.user_email = l_email
-                            st.rerun()
+                        if conn:
+                            cur = conn.cursor()
+                            cur.execute("SELECT password FROM users WHERE email = %s", (l_email,))
+                            res = cur.fetchone()
+                            cur.close()
+                            conn.close()
+                            if res and res[0] == l_pass:
+                                st.session_state.logged_in = True
+                                st.session_state.user_email = l_email
+                                st.rerun()
+                            else:
+                                st.error("Email atau password salah.")
                         else:
-                            st.error("Email atau password salah.")
+                            st.error("Koneksi database bermasalah.")
             
             with tab2:
                 r_email = st.text_input("Email Baru", key="r_email")
@@ -163,12 +175,15 @@ def login_sidebar():
                         if current_count < 20:
                             try:
                                 conn = get_db_connection()
-                                cur = conn.cursor()
-                                cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (r_email, r_pass))
-                                conn.commit()
-                                cur.close()
-                                conn.close()
-                                st.success("Akun berhasil dibuat! Silakan login.")
+                                if conn:
+                                    cur = conn.cursor()
+                                    cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)", (r_email, r_pass))
+                                    conn.commit()
+                                    cur.close()
+                                    conn.close()
+                                    st.success("Akun berhasil dibuat! Silakan login.")
+                                else:
+                                    st.error("Koneksi database bermasalah.")
                             except Exception as e:
                                 st.error("Email sudah terdaftar.")
                         else:
@@ -190,14 +205,17 @@ def login_sidebar():
                 if feedback_msg:
                     try:
                         conn = get_db_connection()
-                        cur = conn.cursor()
-                        cur.execute("INSERT INTO feedback (user_id, message) VALUES (%s, %s)", ("guest", feedback_msg))
-                        conn.commit()
-                        cur.close()
-                        conn.close()
-                        st.success("Pesan terkirim! Terima kasih.")
-                        # Notifikasi sederhana via UI untuk admin (karena server SMTP butuh kredensial)
-                        st.toast(f"Notifikasi terkirim ke {os.environ.get('ADMIN_EMAIL')}", icon="📧")
+                        if conn:
+                            cur = conn.cursor()
+                            cur.execute("INSERT INTO feedback (user_id, message) VALUES (%s, %s)", ("guest", feedback_msg))
+                            conn.commit()
+                            cur.close()
+                            conn.close()
+                            st.success("Pesan terkirim! Terima kasih.")
+                            # Notifikasi sederhana via UI untuk admin (karena server SMTP butuh kredensial)
+                            st.toast(f"Notifikasi terkirim ke {os.environ.get('ADMIN_EMAIL')}", icon="📧")
+                        else:
+                            st.error("Koneksi database bermasalah.")
                     except Exception as e:
                         st.error(f"Gagal mengirim: {e}")
                 else:
