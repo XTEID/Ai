@@ -127,10 +127,11 @@ def get_ai_response(prompt, search_context):
         Anda adalah AI Peneliti Senior yang ahli dalam menganalisis karya ilmiah global.
         
         Tugas Anda:
-        1. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
-        2. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
-        3. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
-        4. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
+        1. Jawablah SETIAP pertanyaan pengguna dengan informasi yang relevan dan mendalam. Jika konteks pencarian tidak mencukupi, gunakan pengetahuan internal Anda untuk memberikan jawaban yang paling membantu.
+        2. Berikan kesimpulan yang akurat, objektif, dan mendalam berdasarkan konteks pencarian.
+        3. Pastikan seluruh jawaban mematuhi koridor hukum dan etika penelitian internasional.
+        4. Hindari segala bentuk saran atau konten yang melanggar hukum (bebas dari tindak pidana).
+        5. Gunakan bahasa ilmiah yang mudah dipahami namun tetap formal.
         
         Konteks Pencarian Ilmiah:
         {search_context}
@@ -143,7 +144,7 @@ def get_ai_response(prompt, search_context):
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "Anda adalah asisten peneliti AI yang menjunjung tinggi integritas ilmiah, akurasi data, dan kepatuhan hukum."},
+                {"role": "system", "content": "Anda adalah asisten peneliti AI yang selalu memberikan jawaban atas setiap input pengguna dengan integritas ilmiah dan kepatuhan hukum."},
                 {"role": "user", "content": full_prompt}
             ]
         )
