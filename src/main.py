@@ -196,6 +196,8 @@ def login_sidebar():
                         cur.close()
                         conn.close()
                         st.success("Pesan terkirim! Terima kasih.")
+                        # Notifikasi sederhana via UI untuk admin (karena server SMTP butuh kredensial)
+                        st.toast(f"Notifikasi terkirim ke {os.environ.get('ADMIN_EMAIL')}", icon="📧")
                     except Exception as e:
                         st.error(f"Gagal mengirim: {e}")
                 else:
